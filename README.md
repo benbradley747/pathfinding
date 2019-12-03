@@ -1,0 +1,2 @@
+# pathfinding
+Pathfinding visualization application
