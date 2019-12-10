@@ -31,8 +31,8 @@ canvas {
 
 #draw_area {
 	width: 806px;
-	height: 603px;
-	background-color: white;
+	height: 610px;
+	background-color: #808080;
 	margin: auto;
 	text-align: center;
 	padding: 5px;
@@ -47,6 +47,7 @@ canvas {
 	height: 220px;
 	border: 1px;
 	border-style: solid;
+	background-color: #D3D3D3;
 	grid-column: 4;
 	grid-row: 1;
 	overflow: scroll;
@@ -91,23 +92,11 @@ canvas {
 	background-color: #3A5F0B;
 }
 
-#startPoint:focus {
-	background-color: #3A5F0B;
-}
-
 #endPoint:hover {
 	background-color: #9B1C31;
 }
 
-#endPoint:focus {
-	background-color: #9B1C31;
-}
-
 #wall:hover {
-	background-color: #43464B;
-}
-
-#wall:focus {
 	background-color: #43464B;
 }
 
