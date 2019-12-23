@@ -89,15 +89,15 @@ canvas {
 }
 
 #startPoint:hover {
-	background-color: #3A5F0B;
+	background-color: #009000;
 }
 
 #endPoint:hover {
-	background-color: #9B1C31;
+	background-color: #AD000C;
 }
 
 #wall:hover {
-	background-color: #43464B;
+	background-color: #808080;
 }
 
 .dropbtn {

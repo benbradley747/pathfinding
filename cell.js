@@ -4,6 +4,10 @@
     this.row = j;
     this.type = "passage"
     this.counter = Number.MAX_SAFE_INTEGER;
+    this.f;
+    this.g;
+    this.h;
+    this.parent;
 
     //Sets Cell object as a wall
     this.setWall = function()
@@ -108,6 +112,9 @@
     this.markVisited = function(cell)
     {
       this.visited = true;
-      grid[this.col][this.row].style.background = "#b5d6ff"
+      if (this.type != "start" && this.type != "end")
+      {
+        grid[this.col][this.row].style.background = "#b5d6ff"
+      }
     }
   }

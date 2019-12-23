@@ -10,6 +10,9 @@ const ALL = "all";
 const clientWidth = 17;
 const clientHeight = 13;
 
+//Width and height of cells
+const cellSpec = "45px";
+
 //Building the 2D array that contains the display elements.
 var grid = new Array(clientWidth);
 build2DArray(grid);
@@ -38,55 +41,295 @@ var endpoint;
 initGrid();
 
   //Pathfinding algorithms/////////////////////////
+
+  //Method for A* pathfinding algorithm
+
+  //Uses the Manhattan Distance approximation as heuristic value.
   function astar() {
+
+    //1.  Initialize the open list
     var openList = [];
+
+    //2.  Initialize the closed list
+    //put the starting node on the open 
+    //list (you can leave its f at zero)
     var closedList = [];
-    openList.push(start);
+    startpoint.f = 0;
+    startpoint.g = 0;
+    openList.push(startpoint); 
+    //3.  while the open list is not empty
+
+    var branch = setInterval(searchTree, 50);
+    
+      function searchTree()
+      {
+        if (openList.length == 0)
+        {
+          clearInterval(branch);
+          astar2();
+          return;
+        }
+        //a) find the node with the least f on 
+        //the open list, call it "min"
+        var min = openList[0];
+        for (var i = 0; i < openList.length; i ++)
+        {
+          if (openList[i].h < min.h)
+          {
+            min = openList[i];
+          }
+        }
+
+        //div for coloring gradient
+        var div = grid[min.col][min.row];
+
+        //b) pop min off the open list
+        openList.splice(openList.indexOf(min), 1);
+
+        //c) generate min's 8 successors
+        var paths = min.surrounding();
+        if (paths.indexOf(startpoint) != -1)
+        {
+          paths.splice(paths.indexOf(startpoint), 1);
+        }
+        for (var i = 0; i < paths.length; i++)
+        {
+          //and set their parents to min
+          var successor = paths[i];
+
+          // i) if successor is the goal, stop search
+          if (successor.type == "end")
+          {
+            if (div.style.backgroundColor == "white")
+              {
+                div.style.backgroundColor = getColorCode(min.counter + 1, startpoint.counter);
+              }
+            successor.parent = min;
+            clearInterval(branch);
+            astar2();
+            return;
+          }
+
+          // successor.g = q.g + distance between successor and q
+          var dist = min.g + 1;
+
+          // successor.h = distance from goal to successor
+          // For the heuristic value we will be using Manhattan distance rather than Euclidean or Diagonal
+          var heur = Math.abs(successor.col - endpoint.col) + Math.abs(successor.row - endpoint.row);
+
+          //calculate potential f cost for successor
+          var totalCost = dist + heur;
+
+          //if a node with the same position as 
+          //successor is in the OPEN list which has a 
+          //lower f than successor, skip this successor
+          var inOpen = false;
+          for (var j = 0; j < openList.length; j++)
+          {
+            if (openList.length != 0 && successor.col == openList[j].col && successor.row == openList[j].row && totalCost > openList[j].f)
+            {
+              inOpen = true;
+            }
+          }
+
+          //if a node with the same position as 
+          //successor  is in the CLOSED list which has
+          //a lower f than successor, skip this successor
+          var inClosed = false;
+          for (var k = closedList.length - 1; k >= 0; k--)
+          {
+            if (closedList.length != 0 && successor.col == closedList[k].col && successor.row == closedList[k].row && totalCost > closedList[k].f)
+            {
+              inClosed = true;
+            }
+          }
+          if (!inOpen && !inClosed)
+          {
+            successor.parent = min;
+            successor.g = dist;
+            successor.h = heur;
+            successor.f = totalCost;
+            openList.push(successor);
+
+          }
+        }
+        closedList.push(min)
+        if (div.style.backgroundColor == "white")
+        {
+          div.style.backgroundColor = getColorCode(min.counter + 1, startpoint.counter);
+        }
+        div.onmouseover = null;
+        div.onmouseout = null;
+      }
+
+    function astar2()
+    {
+      var cur = endpoint;
+      var path = [];
+      while (cur.type != "start")
+      {
+        path.push(cur);
+        cur = cur.parent;
+      }
+
+      var iterator = path.length - 1;
+      var displayAlgo = setInterval(displayAstar, 150);
+      function displayAstar()
+      {
+        if (iterator < 0)
+        {
+          clearInterval(displayAlgo);
+          createConsoleMsg("Visualization completed successfully");
+        }
+        else
+        {
+          path[iterator].markVisited();
+          iterator --;
+        }
+      }
+    }
   }
 
   function djikstra()
   {
+    var list = assignValues();
+    var openList = [];
+    var closedList = [];
+    var pathLength = startpoint.counter;
+    startpoint.counter = 0;
+    openList.push(startpoint);
 
+    var branch = setInterval(dijkstraBranch, 50);
+    function dijkstraBranch()
+    {
+        if (openList.length == 0)
+        {
+          clearInterval(branch);
+          dijkstra2();
+          return;
+        }
+
+        var min = openList[0];
+        for (var i = 0; i < openList.length; i ++)
+        {
+          if (openList[i].h < min.h)
+          {
+            min = openList[i];
+          }
+        }
+
+        var div = grid[min.col][min.row];
+        openList.splice(openList.indexOf(min), 1);
+
+        var paths = min.surrounding();
+        if (paths.indexOf(startpoint) != -1)
+        {
+          paths.splice(paths.indexOf(startpoint), 1);
+        }
+
+        for (var i = 0; i < paths.length; i++)
+        {
+          var successor = paths[i];
+
+        if (successor.type == "end")
+        {
+          if (div.style.backgroundColor == "white")
+            {
+              div.style.backgroundColor = getColorCode(pathLength - (min.counter + 1), pathLength);
+            }
+          successor.parent = min;
+          clearInterval(branch);
+          dijkstra2();
+          return;
+        }
+
+        var dist = min.counter + 1;
+
+        var inOpen = false;
+        for (var j = 0; j < openList.length; j++)
+        {
+          if (openList.length != 0 && successor.col == openList[j].col && successor.row == openList[j].row && dist > openList[j].counter)
+          {
+            inOpen = true;
+          }
+        }
+
+        var inClosed = false;
+        for (var k = closedList.length - 1; k >= 0; k--)
+        {
+          if (closedList.length != 0 && successor.col == closedList[k].col && successor.row == closedList[k].row && dist > closedList[k].counter)
+          {
+            inClosed = true;
+          }
+        }
+        if (!inOpen && !inClosed)
+        {
+          successor.parent = min;
+          successor.counter = dist;
+          openList.push(successor);
+        }
+      }
+      closedList.push(min)
+      if (div.style.backgroundColor == "white")
+      {
+        div.style.backgroundColor = getColorCode(pathLength - (min.counter + 1), pathLength);
+      }
+      div.onmouseover = null;
+      div.onmouseout = null;
+    }
+
+    function dijkstra2()
+    {
+      var path = [];
+      var cur = endpoint;
+      while (cur.type != "start")
+      {
+        path.push(cur);
+        cur = cur.parent;
+      }
+
+      var iterator = path.length - 1;
+      var displayDijkstra = setInterval(pathDisplay, 150);
+      function pathDisplay()
+      {
+        if (iterator < 0)
+        {
+          clearInterval(displayDijkstra);
+          createConsoleMsg("Visualization completed successfully.");
+        }
+        else
+        {
+          path[iterator].markVisited();
+          iterator --;
+        }
+      }
+    }
   }
 
   function sample()
   {
-    var mainCellList = [];
-    endpoint.counter = 0;
-    mainCellList.push(endpoint);
-    var iterator = 0;
-    var assignCounter = setInterval(findPath, 50)
+    var mainCellList = assignValues();
+    iterator = 0;
+    var assignCounter = setInterval(findPath, 50);
     function findPath()
     {
-      var cur = mainCellList[iterator];
-      var surrounding = mainCellList[iterator].surrounding();
-      for (var i = 0; i < surrounding.length; i++)
-      {
-        for (var j = 0; j < mainCellList.length; j++)
-        {
-          if ((surrounding[i].col != mainCellList[j].col || surrounding[i].row != mainCellList[j].row) && mainCellList.indexOf(surrounding[i]) == -1)
-          {
-            surrounding[i].counter = cur.counter + 1;
-            mainCellList.push(surrounding[i]);
-            var div = grid[mainCellList[mainCellList.length - 1].col][mainCellList[mainCellList.length - 1].row];
-            div.innerHTML = cur.counter + 1;
-            if (div.style.backgroundColor == "white")
-              div.style.backgroundColor = getColorCode(cur.counter + 1);
-            div.style.fontFamily = "Courier New";
-            div.onmouseover = null;
-            div.onmouseout = null;
-          }
-        }
-      }
-      if (mainCellList.indexOf(startpoint) == -1) 
-      {
-        iterator++;
-      }
-      else
+      if (mainCellList[iterator].type == "start") 
       {
         clearInterval(assignCounter);
         samplePart2();
       }
+      var cur = mainCellList[iterator];
+      if (mainCellList[iterator] != startpoint && mainCellList[iterator] != endpoint)
+      {
+        var div = grid[cur.col][cur.row];
+        if (div.style.backgroundColor == "white")
+        {
+          div.style.backgroundColor = getColorCode(cur.counter + 1, startpoint.counter);
+        }
+        div.onmouseover = null;
+        div.onmouseout = null;
+      }
+      iterator++;
     }
     function samplePart2()
     {
@@ -125,7 +368,32 @@ initGrid();
     }
   }
 
+  function assignValues()
+  {
+    mainCellList = [];
+    endpoint.counter = 0;
+    mainCellList.push(endpoint);
 
+    var iterator = 0;
+    while (iterator < mainCellList.length)
+    {
+      var cur = mainCellList[iterator];
+      var surrounding = mainCellList[iterator].surrounding();
+      for (var i = 0; i < surrounding.length; i++)
+      {
+        for (var j = 0; j < mainCellList.length; j++)
+        {
+          if ((surrounding[i].col != mainCellList[j].col || surrounding[i].row != mainCellList[j].row) && mainCellList.indexOf(surrounding[i]) == -1)
+          {
+            surrounding[i].counter = cur.counter + 1;
+            mainCellList.push(surrounding[i]);
+          }
+        }
+      }
+      iterator ++;
+    }
+    return mainCellList;
+  }
   /////////////////////////////////////////////////
 
   /*
@@ -140,8 +408,8 @@ initGrid();
       row.style.verticalAlign = "top";
       for (var x = 0; x < clientWidth; x++) {
         var cell = document.createElement("div");
-        cell.style.width = "45px";
-        cell.style.height = "45px";
+        cell.style.width = cellSpec;
+        cell.style.height = cellSpec;
         cell.style.borderStyle = "solid";
         cell.style.borderColor = "#808080";
         cell.style.borderWidth = "thin";
@@ -208,9 +476,14 @@ initGrid();
             curDiv.style.background = "white";
             curDiv.id = EMPTY;
             curDiv.innerHTML = "";
+            curCell.counter = Number.MAX_SAFE_INTEGER;
             setHighlight(curDiv);
             curCell.setPassage();
             curCell.visited = false;
+            curCell.f = null;
+            curCell.g = null;
+            curCell.h = null;
+            curCell.parent = null;
           }
         } else {
           if (curDiv.id == WALL || curDiv.id == START || curDiv.id == END || curDiv.id == EMPTY) {
@@ -220,6 +493,10 @@ initGrid();
             curCell.setPassage();
             curCell.counter = Number.MAX_SAFE_INTEGER;
             curCell.visited = false;
+            curCell.f = null;
+            curCell.g = null;
+            curCell.h = null;
+            curCell.parent = null;
             curDiv.onmouseover = function () { this.style.backgroundColor = "#D3D3D3"; };
             curDiv.onmouseout = function  () { this.style.backgroundColor = getBackgroundColor(this); };
           }
@@ -248,14 +525,14 @@ initGrid();
       cellGrid[col][row].setWall();
     } else if (placingStart) {
       clearCells(START);
-      thisCell.style.background = "#3A5F0B";
+      thisCell.style.background = "#009000";
       thisCell.id = START;
       cellGrid[col][row].setStart();
       startpoint = cellGrid[col][row];
       startPlaced = true;
     } else if (placingEnd) {
       clearCells(END);
-      thisCell.style.background = "#9B1C31";
+      thisCell.style.background = "#AD000C";
       thisCell.id = END;
       cellGrid[col][row].setEnd();
       endpoint = cellGrid[col][row];
@@ -294,13 +571,23 @@ initGrid();
       content.style.color = "red";
 
     } else if (algorSelected && startPlaced && endPlaced) {
+      var checkPath = assignValues();
+      if (checkPath.indexOf(startpoint) == -1)
+      {
+        statusMsg += "Invalid grid/maze - no path exists"
+        node = document.createTextNode(statusMsg);
+        content.style.color = "red";
+        content.appendChild(node);
+        disp.appendChild(content);
+        document.getElementById("console_area").scrollTop = disp.scrollHeight;
+        return;
+      }
       statusMsg += "Beginning visualization..."
       node = document.createTextNode(statusMsg); 
-      content.style.color = "green";
 
-      //TODO - logic by cellGrid not by grid
       if (currentAlgor == "A*") 
       {
+        assignValues();
         astar();
       }
 
@@ -500,9 +787,9 @@ initGrid();
     } else if (thisCell.id == WALL) {
       return "#808080";
     } else if (thisCell.id == START) {
-      return "#3A5F0B";
+      return "#009000";
     } else {
-      return "#9B1C31";
+      return "#AD000C";
     }
   }
 
@@ -530,15 +817,20 @@ initGrid();
     #FF6600
     
   */
-  function getColorCode(counter) {
-    if (counter <= 5)
-      return "#FFAF7A";
-    else if (counter > 5 && counter <= 10)
-      return "#FF9D5C";
-    else if (counter > 10 && counter <= 15)
-      return "#FF8B3D";
-    else if (counter > 15 && counter <= 20)
-      return "#FF781F";
-    else
-      return "#FF6600";
+  function getColorCode(counter, length) {
+    var section = Math.ceil(length / 7);
+    if (counter <= section)
+      return "#C07963";
+    if (counter <= section * 2)
+      return "#C09363";
+    if (counter <= section * 3)
+      return "#C0AB63";
+    if (counter <= section * 4)
+      return "#C0BF63";
+    if (counter <= section * 5)
+      return "#ABC063";
+    if (counter <= section * 6)
+      return "#94C063";
+    if (counter <= section * 7)
+      return "#7CC063";
   }
